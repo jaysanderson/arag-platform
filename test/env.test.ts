@@ -6,8 +6,18 @@ import { test } from "node:test";
 import { assertAragEnv, describeEnv, loadDotEnv, parseDotEnv, readEnv } from "../src/config/env.ts";
 
 test("parseDotEnv handles comments, quotes and export prefix", () => {
-  const out = parseDotEnv(`# c\nA=1\nexport B="two words"\nC='x'\nBAD\n D = spaced \n`);
-  assert.deepEqual(out, { A: "1", B: "two words", C: "x", D: "spaced" });
+  const out = parseDotEnv(
+    `# c\nA=1\nexport B="two words"\nC='x'\nBAD\n D = spaced \nE=info   # trailing comment\nF="keep # inside quotes"\nG=#ff0000\n`,
+  );
+  assert.deepEqual(out, {
+    A: "1",
+    B: "two words",
+    C: "x",
+    D: "spaced",
+    E: "info",
+    F: "keep # inside quotes",
+    G: "#ff0000",
+  });
 });
 
 test("loadDotEnv never overrides real env and returns the path used", () => {

@@ -54,3 +54,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [0.1.6] - 2026-09-12
 ### Added
 - White-label branding: `readBranding(env)` / `Branding` / `BrandingSchema` (BRAND_* variables), UI kit `applyBranding()` and `<arag-shell>` reading `GET /api/v1/branding` (name, logo, colours, powered-by toggle, footer, docs link); `ui/favicon.svg`.
+
+## [0.1.7] - 2026-09-12
+### Fixed
+- `parseDotEnv` strips unquoted trailing comments (`KEY=value  # note`), so a copied `.env.example` boots; quoted values and leading `#` (colours) are preserved.
