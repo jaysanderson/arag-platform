@@ -53,7 +53,7 @@ test("describeEnv redacts secrets", () => {
   const d = describeEnv(
     readEnv({ ARAG_API_KEY: "supersecretvalue", ADMIN_TOKEN: "admintoken123", API_KEYS: "k1,k2" }),
   ) as { arag: { apiKey: string }; adminToken: string; apiKeys: string[] };
-  assert.equal(d.arag.apiKey, "•••(16 chars)");
-  assert.equal(d.adminToken, "•••(13 chars)");
+  assert.equal(d.arag.apiKey, "•••(medium)");
+  assert.equal(d.adminToken, "•••(short)");
   assert.deepEqual(d.apiKeys, ["•••", "•••"]);
 });

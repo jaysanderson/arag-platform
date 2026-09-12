@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const port = Number(process.env.PW_PORT ?? 8181);
+// Derive a per-product port from the package name so sibling products never share a web server.
+const slug = "__PRODUCT_SLUG__";
+const port = Number(process.env.PW_PORT ?? 8200 + ([...slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 600));
 export default defineConfig({
   testDir: process.env.SHOWCASE ? "showcase" : "test/e2e",
   timeout: 60_000,
@@ -14,7 +16,7 @@ export default defineConfig({
   },
   outputDir: process.env.SHOWCASE ? "showcase/out" : "test-results",
   webServer: {
-    command: `ARAG_MOCK=1 ADMIN_TOKEN=e2e-admin-token DATA_DIR=./data/e2e PORT=${port} node src/index.ts`,
+    command: `ENV_FILE=/dev/null ARAG_MOCK=1 ADMIN_TOKEN=e2e-admin-token DATA_DIR=./data/e2e PORT=${port} node src/index.ts`,
     url: `http://127.0.0.1:${port}/healthz`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

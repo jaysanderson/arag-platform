@@ -411,3 +411,17 @@ test("securityHeaders default CSP is narrow and extensible", async () => {
     await c.close();
   }
 });
+
+test("per-route rate limits use their own bucket", async () => {
+  const app = makeApp({ RATE_LIMIT_RPS: "100", RATE_LIMIT_BURST: "100" });
+  app.get("/cheap", () => ({ ok: true }));
+  app.get("/expensive", () => ({ ok: true }), { rateLimit: { rps: 1, burst: 1 } });
+  const c = await startTestServer(app);
+  try {
+    assert.equal((await c.get("/expensive")).status, 200);
+    assert.equal((await c.get("/expensive")).status, 429);
+    assert.equal((await c.get("/cheap")).status, 200);
+  } finally {
+    await c.close();
+  }
+});

@@ -31,3 +31,15 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [0.1.3] - 2026-09-12
 ### Fixed
 - Export `constantTimeEqual`; template lint clean; `make smoke` live check against a sandbox KB.
+
+## [0.1.4] - 2026-09-12
+### Added
+- Per-route rate limits (`rateLimit: { rps, burst }` route option, separate bucket per client and route).
+- Mock fixtures re-exported (`SAMPLE_DOCS`, `SAMPLE_CALL_TRANSCRIPT`, `mockFixtures`).
+- `Collection.corruptBackup` plus an error log line when a store file is quarantined.
+### Changed
+- UI kit: `[hidden] { display: none !important }` so grid/flex containers honour `hidden`.
+- Deliberate 5xx `HttpError`s log at warn without a stack; only unexpected exceptions log stacks.
+- Admin config redaction shows a length bucket (short/medium/long) instead of the exact length.
+- Mock labeler assigns at most one paragraph label and two resource labels.
+- `ENV_FILE=/dev/null` disables `.env` loading; template Playwright config uses a per-product port and no `.env`.
