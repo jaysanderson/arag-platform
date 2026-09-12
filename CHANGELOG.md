@@ -43,3 +43,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - Admin config redaction shows a length bucket (short/medium/long) instead of the exact length.
 - Mock labeler assigns at most one paragraph label and two resource labels.
 - `ENV_FILE=/dev/null` disables `.env` loading; template Playwright config uses a per-product port and no `.env`.
+
+## [0.1.5] - 2026-09-12
+### Fixed
+- Multipart boundaries are case-sensitive: the parser now receives the original `Content-Type` (browser uploads with `----WebKitFormBoundary…` parsed to zero parts before).
+- `parseMultipart` tolerates non-percent-encoded filenames (was a 500) and strips path separators.
+### Docs
+- Scope single-document asks with `resource_filters`; per-resource `/ask` fails with `full_resource` on the live platform.

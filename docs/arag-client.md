@@ -25,6 +25,7 @@ const arag = new AragClient({ kbId, apiKey, region: "aws-us-east-2-1" /* or base
 - `answer_json_schema` and `citations` are mutually exclusive on ARAG (422). `askStream()` drops `citations` automatically when a schema is set; the structured object arrives as `answerJson`.
 - A resource's status turns `PROCESSED` a few seconds **before** it is retrievable. Gate extraction on `waitSearchable(rid, { query: <first words of the extracted text> })` after `waitProcessed()`; without a document-derived probe query the check can report `false` on short texts even though retrieval works.
 - Stream item order is not fixed: on the current platform `answer` chunks can arrive **before** `retrieval`, followed by `status`, `augmented_context`, `citations`, `metadata`, `consumption`. `ask()` assembles regardless of order.
+- Scope single-document questions with `resource_filters: [rid]` on the KB `/ask`; the per-resource `/resource/{rid}/ask` endpoint 500/503s with `full_resource` and returns no retrieval on some KBs (found live by the Document Processing team).
 - `POST /predict/remi` is best-effort: it can return HTTP 500 for some inputs (observed live with a single short context). Treat REMi as an optional quality signal, never block an answer on it.
 - With `rag_strategies: [{ name: "full_resource" }]`, retrieval still runs first to locate the resource. Seed `query` with real document text (not an instruction) so retrieval hits.
 - Data-augmentation tasks require an `llm` block and allow one running task per operation type; use `waitTasksIdle()` between starts.

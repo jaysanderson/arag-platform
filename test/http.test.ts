@@ -425,3 +425,21 @@ test("per-route rate limits use their own bucket", async () => {
     await c.close();
   }
 });
+
+test("multipart parsing keeps the boundary's case and tolerates odd filenames", async () => {
+  const app = makeApp();
+  app.post("/up", (ctx) => ({ files: ctx.files.map((f) => f.filename), fields: ctx.body }));
+  const c = await startTestServer(app);
+  try {
+    const boundary = "----WebKitFormBoundaryAbC123XyZ";
+    const body = `--${boundary}\r\nContent-Disposition: form-data; name="f"; filename="a 100%.txt"\r\nContent-Type: text/plain\r\n\r\nhi\r\n--${boundary}\r\nContent-Disposition: form-data; name="n"\r\n\r\n1\r\n--${boundary}--\r\n`;
+    const r = await c.request("POST", "/up", {
+      body,
+      headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+    });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.json, { files: ["a 100%.txt"], fields: { n: "1" } });
+  } finally {
+    await c.close();
+  }
+});
