@@ -12,6 +12,7 @@ import {
   JobManager,
   type Logger,
   type PlatformEnv,
+  readBranding,
   Store,
   securityHeaders,
   startMockArag,
@@ -102,6 +103,11 @@ export async function createProduct(
   registerAskRoutes(app, { notes });
   registerJobRoutes(app, { jobs });
   registerAdminRoutes(app, { arag, env, log, usage, store, jobs, version: VERSION });
+
+  // White-label branding (BRAND_* env) — read by the UI kit shell.
+  const branding = readBranding(process.env, { productName: "__PRODUCT_TITLE__" });
+  app.get("/api/v1/branding", () => branding, { operationId: "getBranding", noRateLimit: true });
+  app.static("/branding", resolve(env.dataDir, "branding"), { cache: "public, max-age=300" });
 
   // Session for the demo UI when API keys are enforced (rate-limited like any public route).
   app.post(

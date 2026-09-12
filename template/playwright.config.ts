@@ -2,7 +2,9 @@ import { defineConfig } from "@playwright/test";
 
 // Derive a per-product port from the package name so sibling products never share a web server.
 const slug = "__PRODUCT_SLUG__";
-const port = Number(process.env.PW_PORT ?? 8200 + ([...slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 600));
+const port = Number(
+  process.env.PW_PORT ?? 8200 + ([...slug].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 600),
+);
 export default defineConfig({
   testDir: process.env.SHOWCASE ? "showcase" : "test/e2e",
   timeout: 60_000,

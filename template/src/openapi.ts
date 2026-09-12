@@ -1,5 +1,6 @@
 /** OpenAPI 3.1 document for __PRODUCT_TITLE__ — the single source of truth for the public API. */
 import {
+  BrandingSchema,
   buildOpenApi,
   jsonBody,
   jsonResponse,
@@ -64,7 +65,14 @@ export const openapi = buildOpenApi({
     { name: "admin", description: "Operator endpoints (ADMIN_TOKEN)" },
     { name: "system", description: "Health and session" },
   ],
-  schemas: { NoteCreate, Note, NotePage: pageSchema("#/components/schemas/Note"), AskRequest, AskResponse },
+  schemas: {
+    NoteCreate,
+    Note,
+    NotePage: pageSchema("#/components/schemas/Note"),
+    AskRequest,
+    AskResponse,
+    Branding: BrandingSchema,
+  },
   paths: {
     "/api/v1/notes": {
       get: {
@@ -184,6 +192,14 @@ export const openapi = buildOpenApi({
           ...standardResponses,
         },
         security: [{ ApiKey: [] }, { Bearer: [] }],
+      },
+    },
+    "/api/v1/branding": {
+      get: {
+        operationId: "getBranding",
+        tags: ["system"],
+        summary: "Effective white-label branding for this deployment",
+        responses: { 200: jsonResponse({ $ref: "#/components/schemas/Branding" }), ...standardResponses },
       },
     },
     "/api/v1/session": {

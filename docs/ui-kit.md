@@ -13,3 +13,7 @@
 Helpers on `window.aragUI`: `api(path, {json, headers})` (problem-aware fetch), `toast(msg, kind)`, `sse(url, {event: fn})`, `esc`, `fmtMs`, `fmtBytes`, `highlightJson`.
 
 Serve from a product: `app.static("/ui", "./vendor/arag-platform/ui")` then `<link rel="stylesheet" href="/ui/arag-ui.css">` and `<script type="module" src="/ui/arag-ui.js"></script>`. Next.js products import the CSS globally and copy `arag-ui.js` into `public/ui/`.
+
+## Branding
+
+`readBranding(env, defaults)` (platform) parses `BRAND_*` variables; products expose it at `GET /api/v1/branding`. `<arag-shell>` fetches it (attribute `branding-src`, `none` to skip) and `applyBranding(b)` sets the CSS variables, product name, logo, powered-by band/credit, footer and docs link. `ui/favicon.svg` is the default icon.

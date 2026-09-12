@@ -50,3 +50,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - `parseMultipart` tolerates non-percent-encoded filenames (was a 500) and strips path separators.
 ### Docs
 - Scope single-document asks with `resource_filters`; per-resource `/ask` fails with `full_resource` on the live platform.
+
+## [0.1.6] - 2026-09-12
+### Added
+- White-label branding: `readBranding(env)` / `Branding` / `BrandingSchema` (BRAND_* variables), UI kit `applyBranding()` and `<arag-shell>` reading `GET /api/v1/branding` (name, logo, colours, powered-by toggle, footer, docs link); `ui/favicon.svg`.
