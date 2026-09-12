@@ -2,7 +2,7 @@
 BUN ?= bun
 NODE ?= node
 
-.PHONY: help install test coverage lint format typecheck check mock sync-platform new-product
+.PHONY: help install test coverage lint format typecheck check mock smoke sync-platform new-product
 
 help:
 	@echo "make install       install dev tooling with bun (exact pins)"
@@ -13,6 +13,7 @@ help:
 	@echo "make typecheck     tsc --noEmit"
 	@echo "make check         lint + typecheck + coverage"
 	@echo "make mock          run the mock ARAG server on :8790"
+	@echo "make smoke         live smoke test of the client against the KB in .env (use a sandbox KB)"
 	@echo "make sync-platform TARGET=../arag-doc-processing   vendor this platform into a product repo"
 	@echo "make new-product   NAME=my-product DIR=../my-product   scaffold a product repo from template/"
 
@@ -38,6 +39,9 @@ check: lint typecheck coverage
 
 mock:
 	$(NODE) src/arag/mock/cli.ts
+
+smoke:
+	$(NODE) scripts/live-smoke.ts
 
 sync-platform:
 	@test -n "$(TARGET)" || (echo "Usage: make sync-platform TARGET=<product repo dir>"; exit 1)

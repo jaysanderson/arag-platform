@@ -44,7 +44,7 @@ document.querySelectorAll('[role="tab"]').forEach((t) =>
     document
       .querySelectorAll('[role="tab"]')
       .forEach((x) => x.setAttribute("aria-selected", String(x === t)));
-    document.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== t.dataset.tab));
+    for (const p of document.querySelectorAll("[data-panel]")) p.hidden = p.dataset.panel !== t.dataset.tab;
   }),
 );
 

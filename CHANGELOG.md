@@ -27,3 +27,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - Job events emitted after finish/cancel are dropped.
 - JSON stores flush on process exit/SIGINT/SIGTERM.
 - Mock `/ask` quotes the best-matching sentences; template admin reloads widgets after sign-in; Playwright runs with `PW_DISABLE_TS_ESM=1` (Node 26 ESM loader hang).
+
+## [0.1.3] - 2026-09-12
+### Fixed
+- Export `constantTimeEqual`; template lint clean; `make smoke` live check against a sandbox KB.
