@@ -58,3 +58,9 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [0.1.7] - 2026-09-12
 ### Fixed
 - `parseDotEnv` strips unquoted trailing comments (`KEY=value  # note`), so a copied `.env.example` boots; quoted values and leading `#` (colours) are preserved.
+
+## [0.1.8] - 2026-09-12
+### Security
+- Branding colours use a strict grammar (hex, numeric `rgb()/hsl()`, keywords) so values are safe to interpolate into server-rendered styles; `isSafeColor()` exported.
+### Docs
+- Next.js products: `ENV_FILE=/dev/null` does not stop Next loading `.env` — blank `ARAG_*` explicitly in test servers (see template docs).
