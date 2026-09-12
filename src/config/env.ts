@@ -47,6 +47,8 @@ export interface PlatformEnv {
   maxBodyBytes: number;
   /** Public base URL used in docs/links (optional). */
   publicUrl: string;
+  /** Which proxy header identifies the client IP: fly (default) | xff | none. */
+  trustProxy: "fly" | "xff" | "none";
   arag: AragEnv;
 }
 
@@ -139,6 +141,11 @@ export function readEnv(src: Src = process.env): PlatformEnv {
     rateLimitBurst: num(src, "RATE_LIMIT_BURST", 20),
     maxBodyBytes: num(src, "MAX_BODY_BYTES", 26_214_400),
     publicUrl: str(src, "PUBLIC_URL"),
+    trustProxy: (() => {
+      const v = str(src, "TRUST_PROXY", "fly");
+      if (!["fly", "xff", "none"].includes(v)) throw new Error("TRUST_PROXY must be fly | xff | none");
+      return v as "fly" | "xff" | "none";
+    })(),
     arag: {
       kbId: str(src, "ARAG_KB_ID"),
       apiKey: str(src, "ARAG_API_KEY"),
@@ -171,7 +178,7 @@ const SECRET_RE = /(token|key|secret|password)/i;
 /** A redacted, admin-safe view of the env for config pages. */
 export function describeEnv(env: PlatformEnv): Record<string, unknown> {
   const redact = (k: string, v: unknown): unknown => {
-    if (typeof v === "string" && SECRET_RE.test(k)) return v ? `${v.slice(0, 4)}…(${v.length})` : "";
+    if (typeof v === "string" && SECRET_RE.test(k)) return v ? `•••(${v.length} chars)` : "";
     if (Array.isArray(v) && SECRET_RE.test(k)) return v.map(() => "•••");
     return v;
   };

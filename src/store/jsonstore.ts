@@ -127,6 +127,30 @@ export class Collection<T extends StoredDoc> {
   }
 }
 
+const stores = new Set<Store>();
+let exitHookInstalled = false;
+function installExitHook(): void {
+  if (exitHookInstalled) return;
+  exitHookInstalled = true;
+  const flush = () => {
+    for (const s of stores) {
+      try {
+        s.flushAll();
+      } catch {
+        /* best effort */
+      }
+    }
+  };
+  process.on("beforeExit", flush);
+  process.on("exit", flush);
+  for (const sig of ["SIGINT", "SIGTERM"] as const) {
+    process.on(sig, () => {
+      flush();
+      process.exit(sig === "SIGINT" ? 130 : 143);
+    });
+  }
+}
+
 export class Store {
   readonly dir: string;
   private readonly collections = new Map<string, Collection<StoredDoc>>();
@@ -135,7 +159,11 @@ export class Store {
   constructor(dir: string, opts: { persist?: boolean } = {}) {
     this.dir = dir;
     this.persist = opts.persist ?? true;
-    if (this.persist) mkdirSync(dir, { recursive: true });
+    if (this.persist) {
+      mkdirSync(dir, { recursive: true });
+      stores.add(this);
+      installExitHook();
+    }
   }
 
   collection<T extends StoredDoc>(name: string, opts: CollectionOptions = {}): Collection<T> {

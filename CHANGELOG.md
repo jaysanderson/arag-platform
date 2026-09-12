@@ -11,3 +11,19 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - JSON Schema subset validator, OpenAPI 3.1 builders and contract-test helpers.
 - `Store`/`Collection` (atomic JSON persistence) and `JobManager` (stages, events, cancellation, SSE fan-out).
 - UI kit (`ui/arag-ui.css`, `ui/arag-ui.js`), product repo template, `sync-platform` and `new-product` scripts, `STANDARDS.md`.
+
+## [0.1.1] - 2026-09-12
+### Fixed
+- `App.close()` is idempotent and no longer rejects when the server was already closed; template `close()` always shuts the mock ARAG down (fixes a hanging test process in scaffolded products).
+
+## [0.1.2] - 2026-09-12
+### Security
+- Rate limiter / `ctx.ip` no longer trusts client-supplied `X-Forwarded-For`; `TRUST_PROXY=fly|xff|none` (default `fly`) selects the trusted header.
+- `constantTimeEqual()` exported; template admin login uses it.
+- Default CSP narrowed (no product-specific hosts, `object-src 'none'`); `securityHeaders({ connectSrc, scriptSrc, … })` lets products extend it.
+- Static serving resolves symlinks before the containment check.
+- Admin config redaction shows only secret length.
+### Fixed
+- Job events emitted after finish/cancel are dropped.
+- JSON stores flush on process exit/SIGINT/SIGTERM.
+- Mock `/ask` quotes the best-matching sentences; template admin reloads widgets after sign-in; Playwright runs with `PW_DISABLE_TS_ESM=1` (Node 26 ESM loader hang).

@@ -221,6 +221,8 @@ export class JobManager {
     this.col.update(job.id, { status: "running" });
     this.notify(job.id, { stage: "job", status: "running", job: this.col.get(job.id)! });
     const emit: JobContext<unknown>["emit"] = (stage, status, extra = {}) => {
+      const current = this.col.get(job.id);
+      if (!current || current.finishedAt) return; // late events after finish/cancel are dropped
       const ev: JobEvent = {
         ts: new Date().toISOString(),
         stage,

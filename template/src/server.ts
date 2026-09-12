@@ -129,8 +129,11 @@ export async function createProduct(
     usage,
     async close() {
       store.flushAll();
-      await app.close();
-      await mock?.close();
+      try {
+        await app.close();
+      } finally {
+        await mock?.close();
+      }
     },
   };
 }

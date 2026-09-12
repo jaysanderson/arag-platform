@@ -348,3 +348,66 @@ test("problem helpers and multipart parser edge cases", () => {
   assert.deepEqual(r.fields, { a: "1" });
   assert.equal(r.files[0]?.data.toString(), "hi");
 });
+
+test("rate limiter ignores spoofed X-Forwarded-For by default and honours TRUST_PROXY modes", async () => {
+  const { constantTimeEqual } = await import("../src/http/app.ts");
+  assert.equal(constantTimeEqual("abc", "abc"), true);
+  assert.equal(constantTimeEqual("abc", "abd"), false);
+  assert.equal(constantTimeEqual("a", "ab"), false);
+  const app = makeApp({ RATE_LIMIT_RPS: "1", RATE_LIMIT_BURST: "1" });
+  app.get("/x", () => ({ ok: true }));
+  const c = await startTestServer(app);
+  try {
+    assert.equal((await c.get("/x", { "x-forwarded-for": "1.1.1.1" })).status, 200);
+    assert.equal(
+      (await c.get("/x", { "x-forwarded-for": "2.2.2.2" })).status,
+      429,
+      "rotating XFF must not reset the bucket",
+    );
+    assert.equal(
+      (await c.get("/x", { "fly-client-ip": "9.9.9.9" })).status,
+      200,
+      "Fly header is trusted by default",
+    );
+  } finally {
+    await c.close();
+  }
+  const xff = makeApp({ RATE_LIMIT_RPS: "1", RATE_LIMIT_BURST: "1", TRUST_PROXY: "xff" });
+  xff.get("/x", (ctx) => ({ ip: ctx.ip }));
+  const c2 = await startTestServer(xff);
+  try {
+    assert.deepEqual((await c2.get("/x", { "x-forwarded-for": "5.5.5.5, 10.0.0.1" })).json, {
+      ip: "5.5.5.5",
+    });
+  } finally {
+    await c2.close();
+  }
+  const none = makeApp({ TRUST_PROXY: "none" });
+  none.get("/x", (ctx) => ({ ip: ctx.ip }));
+  const c3 = await startTestServer(none);
+  try {
+    assert.equal(
+      (await c3.get("/x", { "fly-client-ip": "9.9.9.9" })).json &&
+        ((await c3.get("/x", { "fly-client-ip": "9.9.9.9" })).json as { ip: string }).ip !== "9.9.9.9",
+      true,
+    );
+  } finally {
+    await c3.close();
+  }
+  assert.throws(() => makeApp({ TRUST_PROXY: "bogus" }), /TRUST_PROXY/);
+});
+
+test("securityHeaders default CSP is narrow and extensible", async () => {
+  const app = makeApp();
+  app.use(securityHeaders({ connectSrc: ["https://api.example.com"] }));
+  app.get("/x", () => ({}));
+  const c = await startTestServer(app);
+  try {
+    const csp = (await c.get("/x")).headers.get("content-security-policy")!;
+    assert.match(csp, /connect-src 'self' https:\/\/cdn\.jsdelivr\.net https:\/\/api\.example\.com/);
+    assert.doesNotMatch(csp, /elevenlabs|livekit/);
+    assert.match(csp, /object-src 'none'/);
+  } finally {
+    await c.close();
+  }
+});

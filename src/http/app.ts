@@ -12,12 +12,12 @@
  * Errors are rendered as RFC 9457 problem+json. Everything is dependency-free.
  */
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import { createReadStream, statSync } from "node:fs";
+import { createReadStream, realpathSync, statSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { extname, normalize, resolve, sep } from "node:path";
 import type { PlatformEnv } from "../config/env.ts";
 import { log as defaultLog, type Logger } from "../log/logger.ts";
-import { formatErrors, validate as validateSchema } from "../validation/jsonschema.ts";
+import { validate as validateSchema } from "../validation/jsonschema.ts";
 import { parseMultipart } from "./multipart.ts";
 import {
   forbidden,
@@ -116,12 +116,21 @@ export class Ctx {
     return Array.isArray(v) ? v[0] : v;
   }
 
-  /** Client IP honouring Fly / proxies. */
+  /**
+   * Client IP. Proxy headers are trusted only per TRUST_PROXY (env): "fly" (default) trusts
+   * `Fly-Client-IP` (set by Fly's edge, not spoofable behind it), "xff" trusts the first
+   * `X-Forwarded-For` entry, "none" uses the socket address. Never trust XFF blindly: a client
+   * could rotate it per request and defeat per-IP rate limiting.
+   */
   get ip(): string {
-    const fly = this.header("fly-client-ip");
-    if (fly) return fly;
-    const xff = this.header("x-forwarded-for");
-    if (xff) return xff.split(",")[0]!.trim();
+    const mode = this.env.trustProxy;
+    if (mode === "fly") {
+      const fly = this.header("fly-client-ip");
+      if (fly) return fly;
+    } else if (mode === "xff") {
+      const xff = this.header("x-forwarded-for");
+      if (xff) return xff.split(",")[0]!.trim();
+    }
     return this.req.socket.remoteAddress ?? "unknown";
   }
 
@@ -461,9 +470,7 @@ export class App {
   // ───────────────────────────── auth ─────────────────────────────
 
   private constantEq(a: string, b: string): boolean {
-    const ba = Buffer.from(a);
-    const bb = Buffer.from(b);
-    return ba.length === bb.length && timingSafeEqual(ba, bb);
+    return constantTimeEqual(a, b);
   }
 
   authenticate(ctx: Ctx): AuthInfo {
@@ -635,14 +642,18 @@ export class App {
       if (ctx.path !== s.prefix && !ctx.path.startsWith(`${s.prefix}/`)) continue;
       let rel = decodeURIComponent(ctx.path.slice(s.prefix.length)) || "/";
       if (rel.endsWith("/")) rel += s.index;
-      const file = normalize(resolve(s.dir, `.${rel}`));
-      if (file !== s.dir && !file.startsWith(s.dir + sep)) throw forbidden("Path traversal");
+      const candidate = normalize(resolve(s.dir, `.${rel}`));
+      if (candidate !== s.dir && !candidate.startsWith(s.dir + sep)) throw forbidden("Path traversal");
+      let file: string;
       let st: ReturnType<typeof statSync>;
       try {
+        file = realpathSync(candidate);
         st = statSync(file);
       } catch {
         continue;
       }
+      const root = realpathSync(s.dir);
+      if (file !== root && !file.startsWith(root + sep)) throw forbidden("Path traversal");
       if (st.isDirectory()) {
         ctx.redirect(`${ctx.path}/`, 301);
         return true;
@@ -797,13 +808,22 @@ export class App {
     });
   }
 
+  /** Stop listening and drop open connections. Safe to call more than once. */
   close(): Promise<void> {
-    return new Promise((resolveP, reject) => {
-      if (!this.server) return resolveP();
-      this.server.close((err) => (err ? reject(err) : resolveP()));
-      this.server.closeAllConnections?.();
+    return new Promise((resolveP) => {
+      const server = this.server;
+      if (!server || !server.listening) return resolveP();
+      server.close(() => resolveP());
+      server.closeAllConnections?.();
     });
   }
+}
+
+/** Constant-time string comparison for tokens and keys. */
+export function constantTimeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
 function groupQuery(q: URLSearchParams): Map<string, string[]> {
@@ -819,21 +839,37 @@ function groupQuery(q: URLSearchParams): Map<string, string[]> {
 
 // ───────────────────────────── built-in middleware ─────────────────────────────
 
-/** Adds baseline security headers. CSP allows self + the jsDelivr/Google Fonts CDNs used by the docs pages and UI kit. */
-export function securityHeaders(opts: { csp?: string } = {}): Middleware {
+/**
+ * Baseline security headers. The default CSP allows self plus the jsDelivr/Google Fonts CDNs used by the
+ * docs pages and UI kit; products extend `connectSrc`/`scriptSrc` etc. for their own integrations
+ * (e.g. VoiceBridge adds ElevenLabs/LiveKit) instead of widening every product's policy.
+ */
+export function securityHeaders(
+  opts: {
+    csp?: string;
+    connectSrc?: string[];
+    scriptSrc?: string[];
+    styleSrc?: string[];
+    mediaSrc?: string[];
+    frameSrc?: string[];
+    workerSrc?: string[];
+  } = {},
+): Middleware {
   const csp =
     opts.csp ??
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
+      `script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net ${(opts.scriptSrc ?? []).join(" ")}`.trim(),
+      `style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com ${(opts.styleSrc ?? []).join(" ")}`.trim(),
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https:",
-      "media-src 'self' blob:",
-      "connect-src 'self' https://cdn.jsdelivr.net wss://api.elevenlabs.io https://api.elevenlabs.io wss://*.livekit.cloud https://*.livekit.cloud https://api.us.elevenlabs.io wss://api.us.elevenlabs.io",
-      "worker-src 'self' blob:",
+      `media-src 'self' blob: ${(opts.mediaSrc ?? []).join(" ")}`.trim(),
+      `connect-src 'self' https://cdn.jsdelivr.net ${(opts.connectSrc ?? []).join(" ")}`.trim(),
+      `worker-src 'self' blob: ${(opts.workerSrc ?? []).join(" ")}`.trim(),
+      `frame-src 'self' ${(opts.frameSrc ?? []).join(" ")}`.trim(),
       "frame-ancestors 'self'",
       "base-uri 'self'",
+      "object-src 'none'",
     ].join("; ");
   return async (ctx, next) => {
     ctx.res.setHeader("X-Content-Type-Options", "nosniff");

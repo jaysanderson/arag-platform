@@ -145,10 +145,9 @@ function looksText(bytes: Buffer): boolean {
 export function paragraphsFor(text: string, transcript: boolean): ParagraphMeta[] {
   const out: ParagraphMeta[] = [];
   const re = /[^\n]+(?:\n(?!\n)[^\n]+)*/g; // blocks separated by blank lines
-  let m: RegExpExecArray | null;
   let i = 0;
-  while ((m = re.exec(text)) !== null) {
-    const start = m.index;
+  for (const m of text.matchAll(re)) {
+    const start = m.index ?? 0;
     const end = start + m[0].length;
     if (!m[0].trim()) continue;
     const p: ParagraphMeta = { start, end, kind: transcript ? "TRANSCRIPT" : "TEXT", classifications: [] };
@@ -749,10 +748,15 @@ export class MockArag {
           const para = primary.f.text
             .slice(primary.p.start ?? 0, primary.p.end ?? 0)
             .replace(/^(Agent|Member):\s*/, "");
-          const sentences = para
+          // Prefer the sentences that share the most vocabulary with the query, then keep reading order.
+          const qt = tokens(effective.query);
+          const ranked = para
             .split(/(?<=[.!?])\s+/)
+            .map((sent, i) => ({ sent, i, score: tokens(sent).filter((t) => qt.includes(t)).length }))
+            .sort((a, b) => b.score - a.score || a.i - b.i)
             .slice(0, 2)
-            .join(" ");
+            .sort((a, b) => a.i - b.i);
+          const sentences = ranked.map((r) => r.sent).join(" ");
           answer = /summar/.test(q)
             ? `${this.textOf(primary.r).split(/\s+/).slice(0, 45).join(" ")}.`
             : sentences.length > 20

@@ -5,6 +5,7 @@ import {
   type Logger,
   type PlatformEnv,
   type Store,
+  constantTimeEqual,
   describeEnv,
   operationSchemas,
   unauthorized,
@@ -28,7 +29,7 @@ export function registerAdminRoutes(
     "/api/v1/admin/login",
     (ctx) => {
       const { token } = ctx.body as { token: string };
-      if (!deps.env.adminToken || token !== deps.env.adminToken) throw unauthorized("Invalid admin token");
+      if (!deps.env.adminToken || !constantTimeEqual(token, deps.env.adminToken)) throw unauthorized("Invalid admin token");
       ctx.setCookie("arag_admin", token, { maxAge: 12 * 3600 });
       return { ok: true };
     },

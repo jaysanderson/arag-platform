@@ -1,6 +1,6 @@
 {
   "name": "@arag/platform",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Shared platform for Progress Agentic RAG (ARAG) products: typed ARAG client, mock ARAG server, HTTP toolkit, UI kit, standards and repo template. Zero runtime dependencies.",
   "license": "Apache-2.0",
   "type": "module",

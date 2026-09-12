@@ -6,7 +6,11 @@ const $ = (s) => document.querySelector(s);
 async function show(authed) {
   $("#login").hidden = authed;
   $("#panel").hidden = !authed;
-  if (authed) loadJobs();
+  if (authed) {
+    // Components mounted before sign-in rendered 401s; reload them now that the cookie is set.
+    document.querySelectorAll("arag-health, arag-json[src], arag-log").forEach((el) => el.load?.());
+    loadJobs();
+  }
 }
 
 async function check() {

@@ -115,3 +115,24 @@ test("interrupted jobs are failed on restart", () => {
   const jobs = new JobManager(new Store(dir), log);
   assert.equal(jobs.get("zombie")?.status, "failed");
 });
+
+test("events emitted after a job is cancelled or finished are dropped", async () => {
+  const store = new Store(mkdtempSync(join(tmpdir(), "jobs3-")));
+  const log = new Logger({ level: "error", write: () => undefined });
+  const jobs = new JobManager(store, log);
+  let leakedEmit: ((s: string) => void) | null = null;
+  jobs.register("late", async (ctx) => {
+    leakedEmit = (m) => ctx.emit("late-stage", "error", { message: m });
+    await new Promise((r) => setTimeout(r, 150));
+    return "done";
+  });
+  const j = jobs.submit("late", {});
+  await new Promise((r) => setTimeout(r, 20));
+  jobs.cancel(j.id);
+  const finishedAt = jobs.get(j.id)!.finishedAt;
+  leakedEmit!("should be ignored");
+  const after = jobs.get(j.id)!;
+  assert.equal(after.status, "cancelled");
+  assert.equal(after.finishedAt, finishedAt);
+  assert.ok(!after.events.some((e) => e.stage === "late-stage"));
+});

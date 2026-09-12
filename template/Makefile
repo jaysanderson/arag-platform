@@ -25,8 +25,9 @@ test:
 	$(NODE) --test --test-reporter=spec 'test/*.test.ts'
 coverage:
 	$(NODE) --test --experimental-test-coverage --test-coverage-include='src/**' --test-coverage-lines=80 'test/*.test.ts'
+# PW_DISABLE_TS_ESM=1: Playwright's ESM TypeScript loader hangs on Node >= 26 (module.register deprecation); the CJS transform works everywhere.
 e2e:
-	$(BUN)x playwright test
+	PW_DISABLE_TS_ESM=1 $(BUN)x playwright test
 lint:
 	$(BUN)x biome check .
 typecheck:
@@ -35,7 +36,7 @@ check: lint typecheck coverage
 docs:
 	$(NODE) vendor/arag-platform/scripts/openapi-to-md.ts http://localhost:$${PORT:-8080}/api/v1/openapi.json docs/developer/api-reference.md
 showcase:
-	SHOWCASE=1 $(BUN)x playwright test showcase/record.spec.ts --config playwright.config.ts
+	PW_DISABLE_TS_ESM=1 SHOWCASE=1 $(BUN)x playwright test showcase/record.spec.ts --config playwright.config.ts
 docker:
 	docker build -t __PRODUCT_SLUG__:local .
 fly-validate:

@@ -45,7 +45,7 @@ export function registerJobRoutes(app: App, deps: { jobs: JobManager }): void {
       const sse = ctx.sse();
       for (const e of job.events) sse.send("event", e);
       if (["succeeded", "failed", "cancelled"].includes(job.status)) {
-        sse.send("job", { job });
+        sse.send("job", { stage: "job", status: job.status, job });
         sse.close();
         return;
       }

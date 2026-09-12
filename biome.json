@@ -31,7 +31,8 @@
       },
       "style": {
         "noNonNullAssertion": "off",
-        "useTemplate": "off"
+        "useTemplate": "off",
+        "noDescendingSpecificity": "off"
       },
       "complexity": {
         "noForEach": "off"
