@@ -105,7 +105,13 @@ export async function createProduct(
   registerAdminRoutes(app, { arag, env, log, usage, store, jobs, version: VERSION });
 
   // White-label branding (BRAND_* env) — read by the UI kit shell.
-  const branding = readBranding(process.env, { productName: "__PRODUCT_TITLE__" });
+  // The branding payload is authoritative for the shell's identity block, so the product's own
+  // name and tagline are its defaults here rather than only markup attributes — otherwise an
+  // unset BRAND_TAGLINE would blank the tagline the page ships with.
+  const branding = readBranding(process.env, {
+    productName: "__PRODUCT_TITLE__",
+    tagline: "Grounded answers over your notes",
+  });
   app.get("/api/v1/branding", () => branding, { operationId: "getBranding", noRateLimit: true });
   app.static("/branding", resolve(env.dataDir, "branding"), { cache: "public, max-age=300" });
 
@@ -122,7 +128,10 @@ export async function createProduct(
   // Static surfaces: UI kit, admin panel, demo app. UIs consume only /api/v1.
   app.static("/ui", resolve(HERE, "vendor/arag-platform/ui"), { cache: "public, max-age=300" });
   app.static("/admin", resolve(HERE, "admin"));
-  app.static("/", resolve(HERE, "public"));
+  // fallback: the operator UI is a single document with real URLs (/notes, /notes/{id}, /settings),
+  // so a deep link or a refresh has to reach index.html. Only navigations get it — a missing asset
+  // still 404s, and /ui and /admin above opt out for their own subtrees.
+  app.static("/", resolve(HERE, "public"), { fallback: true });
 
   return {
     name: "__PRODUCT_SLUG__",

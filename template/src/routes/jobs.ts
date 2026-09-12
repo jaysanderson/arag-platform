@@ -11,7 +11,11 @@ export function registerJobRoutes(app: App, deps: { jobs: JobManager }): void {
   app.get(
     "/api/v1/jobs",
     (ctx) => ({
-      items: deps.jobs.list({ status: ctx.queryObj.status as JobStatus | undefined, limit: 100 }),
+      items: deps.jobs.list({
+        status: ctx.queryObj.status as JobStatus | undefined,
+        ref: ctx.queryObj.ref as string | undefined,
+        limit: 100,
+      }),
     }),
     {
       auth: "api",

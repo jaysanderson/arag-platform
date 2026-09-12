@@ -1,18 +1,32 @@
 # __PRODUCT_TITLE__
 
-Open-source product built on **Progress Agentic RAG (ARAG)**. API-first: every capability is a versioned REST endpoint with an OpenAPI 3.1 spec; the demo app and admin panel consume only that API.
+Open-source product built on **Progress Agentic RAG (ARAG)**. API-first: every capability is a versioned REST endpoint with an OpenAPI 3.1 spec; the workspace and the operator console consume only that API.
 
 ## Quick start
 
 ```bash
 make install            # bun install (dev tooling only; no npm)
 cp .env.example .env    # add ARAG_KB_ID / ARAG_API_KEY / ARAG_REGION — or leave empty to run on the mock ARAG
-make dev                # http://localhost:8080  (demo)  · /admin/ (admin)  · /api/v1/docs (API reference)
+make dev                # http://localhost:8080 (workspace) · /admin/ (operator console) · /api/v1/docs
 make check              # lint + types + tests with coverage
-make e2e                # Playwright (demo + admin) on a mock-backed server
+make e2e                # Playwright journeys + the app shell at 1440 and 390 px, on a mock-backed server
 ```
 
-Surfaces: **Demo** `/` · **Admin** `/admin/` (needs `ADMIN_TOKEN`) · **API** `/api/v1` (`/api/v1/docs` Redoc, `/api/v1/swagger`).
+Surfaces:
+
+| Screen | Path | What it is |
+| --- | --- | --- |
+| Overview | `/` | counts, recent notes, first-run empty state |
+| Notes | `/notes` | list with search, status filter, sorting, selection, bulk delete and pagination |
+| Note | `/notes/{id}` | the record, with Overview / Processing / Ask tabs |
+| Ask | `/ask` | grounded answers with citations across every note |
+| Settings | `/settings` | connection, white-label branding, API access, danger zone |
+| Operator console | `/admin/` | same shell, own navigation (needs `ADMIN_TOKEN`) |
+| API | `/api/v1` | `/api/v1/docs` (Redoc), `/api/v1/swagger` |
+
+The front end is one document with real URLs (`app.static("/", …, { fallback: true })`) built
+entirely from the shared UI kit — see `vendor/arag-platform/docs/ui-kit.md`. Add **domain**
+components locally; do not re-cut the shell, the table, the drawer or the confirm dialog.
 
 ## Documentation
 

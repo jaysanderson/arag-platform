@@ -3,43 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>__PRODUCT_TITLE__ · demo</title>
+  <title>__PRODUCT_TITLE__</title>
   <link rel="icon" href="/ui/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/ui/arag-ui.css" />
   <script type="module" src="/ui/arag-ui.js"></script>
   <script type="module" src="/app.js"></script>
 </head>
 <body class="arag">
-  <arag-shell product="__PRODUCT_TITLE__" tagline="demo" nav="Demo=/,Admin=/admin/" admin-href="/admin/" docs-href="/api/v1/docs">
-    <div class="arag-grid split">
-      <section class="arag-stack">
-        <div class="arag-card">
-          <div class="head"><h2>1 · Add a note</h2><span class="arag-chip info">ingests into ARAG</span></div>
-          <div class="body arag-stack">
-            <div class="arag-field"><label for="title">Title</label><input id="title" class="arag-input" value="Onboarding policy" /></div>
-            <div class="arag-field"><label for="body">Body</label><textarea id="body" class="arag-textarea">New employees receive a laptop on day one. Parking passes are issued by Facilities within three business days. Expense claims must be filed within 30 days.</textarea></div>
-            <div class="arag-row"><button id="create" class="arag-btn">Create note</button><span id="createStatus" class="muted small"></span></div>
-          </div>
-        </div>
-        <div class="arag-card">
-          <div class="head"><h2>Processing</h2></div>
-          <div class="body"><arag-job-timeline id="timeline"></arag-job-timeline></div>
-        </div>
-      </section>
-      <section class="arag-stack">
-        <div class="arag-card">
-          <div class="head"><h2>2 · Ask a grounded question</h2></div>
-          <div class="body arag-stack">
-            <div class="arag-row"><input id="question" class="arag-input" value="When must expense claims be filed?" /><button id="ask" class="arag-btn">Ask</button></div>
-            <div id="answer" class="arag-chat"></div>
-          </div>
-        </div>
-        <div class="arag-card">
-          <div class="head"><h2>Notes</h2><button id="refresh" class="arag-btn ghost sm">Refresh</button></div>
-          <div class="body"><table class="arag-table" id="notes"><thead><tr><th>Title</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody></tbody></table></div>
-        </div>
-      </section>
-    </div>
-  </arag-shell>
+  <!-- One document, real URLs (/notes, /notes/{id}, /settings). The server's static mount is
+       registered with `fallback: true`, so a deep link or a refresh reaches this page. -->
+  <arag-app-shell
+    product="__PRODUCT_TITLE__"
+    tagline="Grounded answers over your notes"
+    nav="--Workspace,Overview=/=home,Notes=/notes=document,Ask=/ask=search,--Configure,Settings=/settings=settings"
+    admin-href="/admin/"
+    docs-href="/api/v1/docs"
+    collapsible>
+    <div id="view"></div>
+  </arag-app-shell>
 </body>
 </html>

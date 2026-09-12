@@ -51,6 +51,18 @@ test("create → job → processed → list/get → ask → delete (responses ma
   const list = await c.get("/api/v1/notes?page=1&page_size=10");
   assert.deepEqual(testing.checkResponse(openapi, "/api/v1/notes", "get", 200, list.json), []);
   assert.equal((list.json as { total: number }).total, 1);
+  // The list view's filters are server-side, and `total` is the size of the FILTERED set.
+  const totalFor = async (query: string) =>
+    ((await c.get(`/api/v1/notes?${query}`)).json as { total: number }).total;
+  assert.equal(await totalFor("q=onboard"), 1);
+  assert.equal(await totalFor("q=nothing-like-this"), 0);
+  assert.equal(await totalFor("status=PROCESSED"), 1);
+  assert.equal(await totalFor("status=ERROR"), 0);
+  assert.equal((await c.get("/api/v1/notes?sort=title:asc")).status, 200);
+  assert.equal((await c.get("/api/v1/notes?sort=bogus")).status, 400, "sort is validated");
+  // The detail page reads the note's job by ref.
+  const byRef = await c.get(`/api/v1/jobs?ref=${note.id}`);
+  assert.equal((byRef.json as { items: unknown[] }).items.length, 1);
   const j = await c.get(`/api/v1/jobs/${job.id}`);
   assert.deepEqual(testing.checkResponse(openapi, "/api/v1/jobs/{id}", "get", 200, j.json), []);
   const ev = await c.get(`/api/v1/jobs/${job.id}/events`);
@@ -61,6 +73,23 @@ test("create → job → processed → list/get → ask → delete (responses ma
   assert.match((ask.json as { answer: string }).answer, /30 days/);
   assert.equal((await c.request("DELETE", `/api/v1/notes/${note.id}`)).status, 204);
   assert.equal((await c.get(`/api/v1/notes/${note.id}`)).status, 404);
+});
+
+test("bulk delete reports what actually went", async () => {
+  const ids: string[] = [];
+  for (const title of ["Bulk A", "Bulk B"]) {
+    const r = await c.post("/api/v1/notes", { title, body: "Something to index." });
+    ids.push((r.json as { note: { id: string } }).note.id);
+  }
+  const res = await c.post("/api/v1/notes/bulk-delete", { ids: [...ids, "not-a-real-id"] });
+  assert.equal(res.status, 200);
+  assert.deepEqual(testing.checkResponse(openapi, "/api/v1/notes/bulk-delete", "post", 200, res.json), []);
+  assert.deepEqual(res.json, { deleted: 2, missing: 1 });
+  assert.equal(
+    (await c.post("/api/v1/notes/bulk-delete", { ids: [] })).status,
+    400,
+    "an empty list is a 400",
+  );
 });
 
 test("validation and problem details", async () => {
@@ -88,7 +117,19 @@ test("docs, health and static surfaces are served", async () => {
   assert.equal((await c.get("/healthz")).status, 200);
   const ready = await c.get("/readyz");
   assert.equal((ready.json as { arag: { ok: boolean } }).arag.ok, true);
-  assert.match((await c.get("/")).text, /arag-shell/);
-  assert.match((await c.get("/admin/")).text, /Admin sign-in/);
+  assert.match((await c.get("/")).text, /arag-app-shell/);
+  assert.match((await c.get("/admin/")).text, /Operator sign-in/);
   assert.match((await c.get("/ui/arag-ui.css")).headers.get("content-type")!, /text\/css/);
+  assert.match(
+    (await c.get("/ui/brand/arag-logo-alt.svg")).text,
+    /5ce500/,
+    "the wordmark ships with the kit",
+  );
+  // Deep links reach the single-document UI (app.static(..., { fallback: true })), but a missing
+  // asset still 404s and the API is untouched by the fallback.
+  const html = { accept: "text/html" };
+  assert.match((await c.get("/notes/anything", html)).text, /arag-app-shell/);
+  assert.match((await c.get("/settings", html)).text, /arag-app-shell/);
+  assert.equal((await c.get("/missing.js", html)).status, 404);
+  assert.equal((await c.get("/api/v1/notes/definitely-missing")).status, 404);
 });

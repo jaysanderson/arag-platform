@@ -50,13 +50,47 @@ export class NotesService {
     });
   }
 
-  list(
-    page: number,
-    pageSize: number,
-  ): { items: Note[]; page: number; page_size: number; total: number; next_page: boolean } {
-    const total = this.col.size;
-    const items = this.col.list({ offset: (page - 1) * pageSize, limit: pageSize });
-    return { items, page, page_size: pageSize, total, next_page: page * pageSize < total };
+  /**
+   * Filter → sort → page, in that order, so `total` is the size of the FILTERED set: a list view
+   * that says "1–25 of 312" while showing a search result is lying about how much is left.
+   */
+  list(opts: { page: number; pageSize: number; q?: string; status?: string; sort?: string }): {
+    items: Note[];
+    page: number;
+    page_size: number;
+    total: number;
+    next_page: boolean;
+  } {
+    const q = (opts.q ?? "").trim().toLowerCase();
+    let rows = this.col.list();
+    if (q) rows = rows.filter((n) => n.title.toLowerCase().includes(q));
+    if (opts.status) rows = rows.filter((n) => n.status === opts.status);
+    const [field = "createdAt", dir = "desc"] = (opts.sort ?? "createdAt:desc").split(":");
+    const sign = dir === "asc" ? 1 : -1;
+    rows = [...rows].sort((a, b) => {
+      const av = String(a[field as keyof Note] ?? "");
+      const bv = String(b[field as keyof Note] ?? "");
+      return av === bv ? 0 : (av < bv ? -1 : 1) * sign;
+    });
+    const total = rows.length;
+    const offset = (opts.page - 1) * opts.pageSize;
+    return {
+      items: rows.slice(offset, offset + opts.pageSize),
+      page: opts.page,
+      page_size: opts.pageSize,
+      total,
+      next_page: offset + opts.pageSize < total,
+    };
+  }
+
+  /** Counts by status, for the overview's stat strip and the list's filter chips. */
+  counts(): Record<string, number> {
+    const out: Record<string, number> = { total: 0, PENDING: 0, PROCESSED: 0, ERROR: 0, UNKNOWN: 0 };
+    for (const n of this.col.list()) {
+      out.total = (out.total ?? 0) + 1;
+      out[n.status] = (out[n.status] ?? 0) + 1;
+    }
+    return out;
   }
 
   get(id: string): Note | undefined {
@@ -85,6 +119,17 @@ export class NotesService {
       .deleteResource(note.resourceId)
       .catch((err) => this.d.log.warn("note.delete.arag", { id, message: (err as Error).message }));
     return this.col.delete(id);
+  }
+
+  /** Bulk delete. Reports what actually went, rather than pretending every id existed. */
+  async deleteMany(ids: readonly string[]): Promise<{ deleted: number; missing: number }> {
+    let deleted = 0;
+    let missing = 0;
+    for (const id of ids) {
+      if (await this.delete(id)) deleted++;
+      else missing++;
+    }
+    return { deleted, missing };
   }
 
   async ask(question: string, noteId?: string): Promise<{ answer: string; sources: string[]; ms: number }> {

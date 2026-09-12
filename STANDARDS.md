@@ -75,11 +75,54 @@ JSON lines to stdout (`{ts, level, msg, requestId, …}`), one `http` line per r
 | Unit | `node --test` (Node repos) / Vitest (Next.js) | pure logic, ≥ 80 % line coverage on `src/` core (`make coverage`) |
 | Integration | `node --test` + mock ARAG (`startMockArag()`) | every route exercised in-process |
 | Contract | `lintSpec()`, `missingFromSpec()`, `checkResponse()` | spec lint clean; every route in spec; success responses validate |
-| E2E | Playwright (`channel: chrome` locally, Chromium in CI) | demo happy path + admin login/health/jobs |
+| E2E | Playwright (`channel: chrome` locally, Chromium in CI) | primary journey + admin login/health/jobs, **plus the app shell at 1440 and 390 px** (§8b) |
 | Lint / types | Biome 2, `tsc --noEmit` | zero errors |
 | Security | `bun audit` | no high/critical |
 
 `make check` runs lint, typecheck, unit/integration/contract with coverage; `make e2e` runs Playwright; CI runs both on push and PR (Node 22 and 24).
+
+## 8b. Product-experience bar (front end)
+
+A product is not a demo with navigation bolted on. The bar, the personas, the IA and the screen
+inventory live in `PRODUCT-EXPERIENCE-BRIEF.md` (workspace root) — read it before designing a
+screen, and keep each product's `design/PRODUCT-EXPERIENCE.md` as the record of what was decided.
+This section is the part the platform enforces.
+
+**Use the kit, do not re-cut it.** Everything in `docs/ui-kit.md` ships in the kit: the left-rail
+app shell, page header, breadcrumb, tabs, filter bar, data table (sort, selection, bulk bar,
+pagination), drawer, confirm dialog, empty state, stat strip, segmented control, skeleton, snippet,
+timeline, split pane, tour, sign-in card and menu. A product may add **domain** components — the
+verified-evidence record, the live-call brief, the moments track — and nothing else. If you need a
+generic component the kit lacks, build it locally with a comment saying so and propose it upstream;
+do not fork one it already has.
+
+- **Shell.** `<arag-app-shell>` (or `<arag-shell layout="rail">`). A signed-in workspace with
+  navigation, a content area, and a settings area — never one page that does the whole thing.
+- **Identity.** The Progress wordmark appears **once**, in the dark band. The rail's identity block
+  carries the product name, tagline and the partner's mark. `BRAND_POWERED_BY=0` removes the band
+  entirely rather than recolouring it.
+- **Progress green `#5ce500`** is artwork, a dark-surface accent and a solid fill carrying ink text.
+  Never text on a light surface, never a hairline, never a status. Meaning-carrying green is
+  `--arag-accent-500`. See `ui/brand/README.md`.
+- **Branding is a hook, not a component.** Mark elements with `data-brand-*` and call
+  `applyBranding()`; never re-implement it. Pass the product's name and tagline as `readBranding`
+  defaults, so `GET /api/v1/branding` is authoritative.
+- **Icons** are inline SVG on one grid, `currentColor`, no icon font, no sprite, **no emoji**. An
+  icon is never the only label on a control without an `aria-label`.
+- **States are designed, not left over.** Every list and record has a loading (skeleton), empty
+  (that teaches), error (what happened · what it affects · what to do) and busy state. Status is
+  carried in text as well as colour, always.
+- **Destructive actions confirm**, focus starts on Cancel, and anything irreversible and plural
+  uses the typed-confirm variant.
+- **Accessibility is part of done.** One polite live region per screen (`announce()`); `aria-sort`
+  on sortable headers; `aria-current="page"` on the active nav item; focus trapped in overlays and
+  returned to the trigger; Escape closes; tablists and segmented controls answer the arrow keys;
+  `prefers-reduced-motion` disables shimmer, slides and pulses; interactive targets ≥ 32 px.
+- **Responsive to 390 px.** The rail becomes a drawer below 900 px; no page scrolls sideways at any
+  width; a wide table scrolls inside its own box. Every product's Playwright suite checks the shell
+  at **1440 and 390 px** (the template ships `test/e2e/shell.spec.ts` — keep it).
+- **Deep links work.** Real URLs for lists, records and tabs; a refresh or a pasted link lands on
+  the same screen (`app.static(prefix, dir, { fallback: true })` for single-document UIs).
 
 ## 9. Platform consumption and versioning
 

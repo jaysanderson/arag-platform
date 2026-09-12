@@ -443,3 +443,70 @@ test("multipart parsing keeps the boundary's case and tolerates odd filenames", 
     await c.close();
   }
 });
+
+test("static SPA fallback is opt-in and only answers navigations", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "spa-"));
+  writeFileSync(join(dir, "index.html"), "<h1>app</h1>");
+  writeFileSync(join(dir, "app.js"), "export {}");
+  const assets = mkdtempSync(join(tmpdir(), "assets-"));
+  writeFileSync(join(assets, "kit.css"), "body{}");
+
+  // Default (no fallback): a deep link 404s, which is what an asset mount wants.
+  const plain = makeApp();
+  plain.static("/", dir);
+  const p = await startTestServer(plain);
+  try {
+    assert.equal((await p.get("/documents/abc", { accept: "text/html" })).status, 404);
+  } finally {
+    await p.close();
+  }
+
+  const app = makeApp();
+  app.get("/api/v1/ping", () => ({ ok: true }));
+  app.static("/ui", assets); // no fallback: a missing asset must stay a 404
+  app.static("/", dir, { fallback: true });
+  const c = await startTestServer(app);
+  try {
+    const html = { accept: "text/html,application/xhtml+xml" };
+    assert.equal((await c.get("/")).status, 200, "real index still served");
+    assert.equal((await c.get("/app.js")).status, 200, "real asset still served");
+    // A navigation with no matching file gets the SPA document…
+    const deep = await c.get("/documents/abc-123", html);
+    assert.equal(deep.status, 200);
+    assert.match(deep.headers.get("content-type")!, /text\/html/);
+    assert.match(deep.text, /<h1>app<\/h1>/);
+    // …but a missing asset, a non-HTML client and an unknown API path do not.
+    assert.equal((await c.get("/vendor/missing.js", html)).status, 404, "extension ⇒ no fallback");
+    assert.equal((await c.get("/documents/abc", { accept: "application/json" })).status, 404);
+    assert.equal((await c.get("/ui/missing", html)).status, 404, "mount without fallback");
+    assert.equal((await c.request("POST", "/documents/abc", { headers: html })).status, 404);
+    // Registered routes always win over the fallback.
+    assert.deepEqual((await c.get("/api/v1/ping", html)).json, { ok: true });
+  } finally {
+    await c.close();
+  }
+});
+
+test('body:"auto" hands the multipart parser the original Content-Type, case intact', async () => {
+  const app = makeApp();
+  // Explicitly "auto" — the mode that used to lowercase the header before handing it on, which
+  // turned a ----WebKitFormBoundary… upload into zero parts (fixed in 0.1.5; regression-locked here).
+  app.post("/auto", (ctx) => ({ files: ctx.files.map((f) => f.filename), fields: ctx.body }), {
+    body: "auto",
+  });
+  const c = await startTestServer(app);
+  try {
+    const boundary = "----WebKitFormBoundaryXyZ987AbC";
+    const body = `--${boundary}\r\nContent-Disposition: form-data; name="f"; filename="Report Q3.PDF"\r\nContent-Type: application/pdf\r\n\r\n%PDF\r\n--${boundary}\r\nContent-Disposition: form-data; name="Kind"\r\n\r\nInvoice\r\n--${boundary}--\r\n`;
+    for (const mediaType of ["multipart/form-data", "Multipart/Form-Data", "MULTIPART/FORM-DATA"]) {
+      const r = await c.request("POST", "/auto", {
+        body,
+        headers: { "content-type": `${mediaType}; BOUNDARY=${boundary}` },
+      });
+      assert.equal(r.status, 200, mediaType);
+      assert.deepEqual(r.json, { files: ["Report Q3.PDF"], fields: { Kind: "Invoice" } }, mediaType);
+    }
+  } finally {
+    await c.close();
+  }
+});

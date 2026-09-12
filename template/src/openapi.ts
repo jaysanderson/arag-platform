@@ -86,6 +86,23 @@ export const openapi = buildOpenApi({
             in: "query",
             schema: { type: "integer", minimum: 1, maximum: 200, default: 50 },
           },
+          {
+            name: "q",
+            in: "query",
+            description: "Free-text filter over the title",
+            schema: { type: "string", maxLength: 200 },
+          },
+          {
+            name: "status",
+            in: "query",
+            schema: { type: "string", enum: ["PENDING", "PROCESSED", "ERROR", "UNKNOWN"] },
+          },
+          {
+            name: "sort",
+            in: "query",
+            description: "field:direction, e.g. title:asc (default createdAt:desc)",
+            schema: { type: "string", pattern: "^(title|status|createdAt):(asc|desc)$" },
+          },
         ],
         responses: { 200: jsonResponse({ $ref: "#/components/schemas/NotePage" }), ...standardResponses },
         security: [{ ApiKey: [] }, { Bearer: [] }],
@@ -107,6 +124,28 @@ export const openapi = buildOpenApi({
             },
             "Accepted",
           ),
+          ...standardResponses,
+        },
+        security: [{ ApiKey: [] }, { Bearer: [] }],
+      },
+    },
+    "/api/v1/notes/bulk-delete": {
+      post: {
+        operationId: "deleteNotes",
+        tags: ["notes"],
+        summary: "Delete several notes and their ARAG resources",
+        requestBody: jsonBody({
+          type: "object",
+          required: ["ids"],
+          properties: { ids: { type: "array", minItems: 1, maxItems: 200, items: { type: "string" } } },
+          additionalProperties: false,
+        }),
+        responses: {
+          200: jsonResponse({
+            type: "object",
+            required: ["deleted"],
+            properties: { deleted: { type: "integer" }, missing: { type: "integer" } },
+          }),
           ...standardResponses,
         },
         security: [{ ApiKey: [] }, { Bearer: [] }],
@@ -149,6 +188,12 @@ export const openapi = buildOpenApi({
             name: "status",
             in: "query",
             schema: { type: "string", enum: ["queued", "running", "succeeded", "failed", "cancelled"] },
+          },
+          {
+            name: "ref",
+            in: "query",
+            description: "Only jobs about this object (a note id)",
+            schema: { type: "string" },
           },
         ],
         responses: {

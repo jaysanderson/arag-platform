@@ -18,7 +18,9 @@ export default defineConfig({
   },
   outputDir: process.env.SHOWCASE ? "showcase/out" : "test-results",
   webServer: {
-    command: `ENV_FILE=/dev/null ARAG_MOCK=1 ADMIN_TOKEN=e2e-admin-token DATA_DIR=./data/e2e PORT=${port} node src/index.ts`,
+    // RATE_LIMIT_RPS=0: a workspace screen makes many more /api/v1 calls than the old single-page
+    // demo did, and the default 5 rps bucket turns a passing suite into a flaky one.
+    command: `ENV_FILE=/dev/null ARAG_MOCK=1 RATE_LIMIT_RPS=0 ADMIN_TOKEN=e2e-admin-token DATA_DIR=./data/e2e PORT=${port} node src/index.ts`,
     url: `http://127.0.0.1:${port}/healthz`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

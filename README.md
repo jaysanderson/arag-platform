@@ -25,7 +25,7 @@ make mock        # standalone mock ARAG on http://127.0.0.1:8790/api/v1 (MOCK_SE
 | `src/openapi/`, `src/validation/` | OpenAPI 3.1 builders, JSON Schema validator (requests + contract tests) | [docs/openapi.md](docs/openapi.md) |
 | `src/store/` | `Store`/`Collection` (DATA_DIR JSON, atomic) and `JobManager` (events, SSE, cancel) | [docs/http-toolkit.md](docs/http-toolkit.md) |
 | `src/testing/` | in-process test client, contract checks, spec lint | [docs/openapi.md](docs/openapi.md) |
-| `ui/` | `arag-ui.css` tokens/components + `arag-ui.js` web components | [docs/ui-kit.md](docs/ui-kit.md) |
+| `ui/` | `arag-ui.css` tokens/components + `arag-ui.js` web components (left-rail app shell, data table, drawer, confirm, icons) + `ui/brand/` wordmarks | [docs/ui-kit.md](docs/ui-kit.md) |
 | `template/` | product repo template (`make new-product`) | [docs/template.md](docs/template.md) |
 | `STANDARDS.md` | API, error, auth, logging, testing, docs and repo standards | — |
 
