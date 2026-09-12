@@ -1,0 +1,36 @@
+{
+  "name": "@arag/platform",
+  "version": "0.1.0",
+  "description": "Shared platform for Progress Agentic RAG (ARAG) products: typed ARAG client, mock ARAG server, HTTP toolkit, UI kit, standards and repo template. Zero runtime dependencies.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./arag": "./src/arag/index.ts",
+    "./arag/mock": "./src/arag/mock/server.ts",
+    "./http": "./src/http/index.ts",
+    "./config": "./src/config/env.ts",
+    "./log": "./src/log/logger.ts",
+    "./store": "./src/store/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "test": "node --test --test-reporter=spec 'test/**/*.test.ts'",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-include='src/**' --test-coverage-exclude='src/arag/mock/fixtures.ts' 'test/**/*.test.ts'",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "mock": "node src/arag/mock/cli.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.0.0",
+    "@types/node": "22.10.0",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "typescript": "5.9.2"
+  }
+}

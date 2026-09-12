@@ -1,0 +1,42 @@
+# Fly.io deployment for __PRODUCT_TITLE__. Set secrets out of band:
+#   fly secrets set ARAG_KB_ID=… ARAG_API_KEY=… ARAG_REGION=… ADMIN_TOKEN=…
+app = "__PRODUCT_SLUG__"
+primary_region = "iad"   # co-locate with the ARAG zone (aws-us-east-2-1 ⇒ iad)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  DATA_DIR = "/data"
+  LOG_LEVEL = "info"
+  RATE_LIMIT_RPS = "5"
+  RATE_LIMIT_BURST = "20"
+
+[[mounts]]
+  source = "data"
+  destination = "/data"
+  initial_size = "1gb"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 1
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 30
+    hard_limit = 50
+
+[[http_service.checks]]
+  interval = "15s"
+  timeout = "3s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>__PRODUCT_TITLE__ · admin</title>
+  <link rel="stylesheet" href="/ui/arag-ui.css" />
+  <script type="module" src="/ui/arag-ui.js"></script>
+  <script type="module" src="/admin/admin.js"></script>
+</head>
+<body class="arag">
+  <arag-shell product="__PRODUCT_TITLE__" tagline="admin" nav="Demo=/,Admin=/admin/" docs-href="/api/v1/docs">
+    <div id="login" class="arag-card pad" style="max-width:420px" hidden>
+      <h2>Admin sign-in</h2>
+      <p class="muted small">Enter the <code>ADMIN_TOKEN</code> configured for this deployment. It is exchanged for an HttpOnly cookie and never stored in the page.</p>
+      <div class="arag-row"><input id="token" class="arag-input" type="password" placeholder="admin token" /><button id="signin" class="arag-btn">Sign in</button></div>
+      <p id="loginError" class="arag-alert error" hidden></p>
+    </div>
+    <div id="panel" hidden>
+      <div class="arag-tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="overview">Overview</button>
+        <button role="tab" data-tab="config">Configuration</button>
+        <button role="tab" data-tab="jobs">Jobs</button>
+        <button role="tab" data-tab="logs">Logs</button>
+      </div>
+      <section data-panel="overview" class="arag-grid cols-2" style="margin-top:16px">
+        <arag-health src="/api/v1/admin/health"></arag-health>
+        <div class="arag-card pad"><h3>Usage</h3><arag-json id="usage" src="/api/v1/admin/usage"></arag-json></div>
+      </section>
+      <section data-panel="config" hidden style="margin-top:16px"><div class="arag-card pad"><h3>Effective configuration (secrets redacted)</h3><arag-json src="/api/v1/admin/config"></arag-json></div></section>
+      <section data-panel="jobs" hidden style="margin-top:16px" class="arag-grid split">
+        <div class="arag-card"><div class="head"><h3>Recent jobs</h3><button id="reloadJobs" class="arag-btn ghost sm">Reload</button></div><div class="body"><table class="arag-table" id="jobs"><thead><tr><th>Kind</th><th>Status</th><th>Stage</th><th>Created</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="arag-card"><div class="head"><h3>Job detail</h3></div><div class="body"><arag-job-timeline id="jobDetail"></arag-job-timeline><arag-json id="jobJson" style="margin-top:12px"></arag-json></div></div>
+      </section>
+      <section data-panel="logs" hidden style="margin-top:16px"><div class="arag-card"><div class="head"><h3>Logs</h3><div class="arag-row"><select id="level" class="arag-select" style="width:auto"><option value="">all</option><option>info</option><option>warn</option><option>error</option></select><input id="contains" class="arag-input" placeholder="filter…" style="width:200px" /></div></div><div class="body"><arag-log id="log" src="/api/v1/admin/logs" limit="200" refresh="5000"></arag-log></div></div></section>
+    </div>
+  </arag-shell>
+</body>
+</html>
