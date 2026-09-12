@@ -4,9 +4,9 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
-import { Logger, readEnv, testing } from "../vendor/arag-platform/src/index.ts";
 import { openapi } from "../src/openapi.ts";
-import { type Product, createProduct } from "../src/server.ts";
+import { createProduct, type Product } from "../src/server.ts";
+import { Logger, readEnv, testing } from "../vendor/arag-platform/src/index.ts";
 
 const ADMIN = "test-admin-token";
 let product: Product;

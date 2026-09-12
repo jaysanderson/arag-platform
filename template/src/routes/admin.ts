@@ -1,13 +1,13 @@
 import {
   type App,
   type AragClient,
-  type JobManager,
-  type Logger,
-  type PlatformEnv,
-  type Store,
   constantTimeEqual,
   describeEnv,
+  type JobManager,
+  type Logger,
   operationSchemas,
+  type PlatformEnv,
+  type Store,
   unauthorized,
 } from "../../vendor/arag-platform/src/index.ts";
 import { openapi } from "../openapi.ts";
@@ -29,7 +29,8 @@ export function registerAdminRoutes(
     "/api/v1/admin/login",
     (ctx) => {
       const { token } = ctx.body as { token: string };
-      if (!deps.env.adminToken || !constantTimeEqual(token, deps.env.adminToken)) throw unauthorized("Invalid admin token");
+      if (!deps.env.adminToken || !constantTimeEqual(token, deps.env.adminToken))
+        throw unauthorized("Invalid admin token");
       ctx.setCookie("arag_admin", token, { maxAge: 12 * 3600 });
       return { ok: true };
     },

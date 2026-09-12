@@ -11,6 +11,7 @@ export type {
 export {
   App,
   Ctx,
+  constantTimeEqual,
   contentTypeFor,
   cors,
   healthRoutes,

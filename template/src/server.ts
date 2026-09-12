@@ -6,17 +6,17 @@ import { resolve } from "node:path";
 import {
   App,
   AragClient,
+  cors,
+  log as defaultLog,
+  healthRoutes,
   JobManager,
   type Logger,
   type PlatformEnv,
   Store,
-  cors,
-  healthRoutes,
-  log as defaultLog,
   securityHeaders,
   startMockArag,
 } from "../vendor/arag-platform/src/index.ts";
-import { VERSION, openapi } from "./openapi.ts";
+import { openapi, VERSION } from "./openapi.ts";
 import { registerAdminRoutes } from "./routes/admin.ts";
 import { registerAskRoutes } from "./routes/ask.ts";
 import { registerJobRoutes } from "./routes/jobs.ts";
